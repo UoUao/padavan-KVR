@@ -1122,7 +1122,7 @@
 
 #if defined(APP_SHADOWSOCKS)
 	struct variable variables_ShadowsocksConf[] = {
-			{"ss_enable","",NULL, EVM_RESTART_SHADOWSOCKS},
+			{"ss_enable","",NULL, EVT_RESTART_SHADOWSOCKS},
 			{"trojan_local_enable","",NULL, EVM_RESTART_SHADOWSOCKS},
 			{"trojan_local","",NULL, EVM_RESTART_SHADOWSOCKS},
 			{"trojan_link","",NULL, EVM_RESTART_SHADOWSOCKS},
@@ -1167,7 +1167,7 @@
 			{"ss_schedule_enable", "", NULL, FALSE},
 			{"ss_schedule", "", NULL, FALSE},
 			{"d_ss_obfsparam","",NULL, EVM_RESTART_SHADOWSOCKS},
-			{"ss_type","",NULL, EVM_RESTART_SHADOWSOCKS|EVM_RESTART_SS_TUNNEL},
+			{"ss_type","",NULL, EVT_RESTART_SS_TUNNEL|EVM_RESTART_SS_TUNNEL},
 			{"ss_mode","",NULL, EVM_RESTART_SHADOWSOCKS},
 			{"ssp_local_port","",NULL, EVM_RESTART_SHADOWSOCKS},
 			{"ss_server","",NULL, EVM_RESTART_SHADOWSOCKS|EVM_RESTART_SS_TUNNEL},
@@ -1183,8 +1183,8 @@
 			{"ss_timeout","",NULL, EVM_RESTART_SHADOWSOCKS|EVM_RESTART_SS_TUNNEL},
 			{"ss_protocol","",NULL, EVM_RESTART_SHADOWSOCKS|EVM_RESTART_SS_TUNNEL},
 			{"ss_proto_param","",NULL, EVM_RESTART_SHADOWSOCKS|EVM_RESTART_SS_TUNNEL},
-			{"ss_obfs","",NULL, EVM_RESTART_SHADOWSOCKS|EVM_RESTART_SS_TUNNEL},
-			{"ss_obfs_param","",NULL, EVM_RESTART_SHADOWSOCKS|EVM_RESTART_SS_TUNNEL},
+			{"ss_obfs","",NULL, EVT_RESTART_SHADOWSOCKS|EVT_RESTART_SS_TUNNEL},
+			{"ss_obfs_param","",NULL, EVT_RESTART_SHADOWSOCKS|EVT_RESTART_SS_TUNNEL},
 			{"socks5_port","",NULL, EVM_RESTART_SHADOWSOCKS},
 			{"socks5_enable","",NULL, EVM_RESTART_SHADOWSOCKS},
 			{"socks5_wenable","",NULL, EVM_RESTART_SHADOWSOCKS},
