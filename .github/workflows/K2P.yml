@@ -34,7 +34,7 @@ jobs:
       env:
         KERNEL: 3.4
       run: |
-        git clone --depth=1 https://github.com/${GITHUB_REPOSITORY}.git /opt/rt-n56u
+        git clone --depth=1 https://github.com/MeIsKuya/padavan.git /opt/rt-n56u
         cd /opt/rt-n56u/toolchain-mipsel
         sh dl_toolchain.sh
         mkdir -p /opt/images/
@@ -424,27 +424,15 @@ jobs:
         
         #echo "CONFIG_FIRMWARE_INCLUDE_V2RAYA=n" >> .config #v2raya 已删除 /trunk/user/httpd/common.h
         #echo "CONFIG_FIRMWARE_INCLUDE_NVPPROXY=n" >> .config #NVPPROXY 已删除 请查看/trunk/user/httpd/common.h
-        ##科学上网## 已删除 请查看/trunk/user/httpd/common.h
-        echo "CONFIG_FIRMWARE_INCLUDE_SHADOWSOCKS=y" >> .config #科学上网插件，选择n后全部有关插件都不集成
-        echo "CONFIG_FIRMWARE_INCLUDE_V2RAY=n" >> .config #集成v2ray执行文件，如果不集成，会从网上下载下来执行，不影响正常使用
-        echo "CONFIG_FIRMWARE_INCLUDE_XRAY=y" >> .config #集成xray执行文件，可以代替v2ray，大小5M多，如果闪存太小不够还是建议使用v2ray
-        echo "CONFIG_FIRMWARE_INCLUDE_TROJAN=n" >> .config #集成trojan执行文件，如果不集成，会从网上下载下来执行，不影响正常使用
+        ##科学上网原生插件配置##
+        echo "CONFIG_FIRMWARE_INCLUDE_SHADOWSOCKS=y" >> .config #开启科学上网插件 (SS/SSR/V2Ray/Trojan/Xray)
+        echo "CONFIG_FIRMWARE_INCLUDE_V2RAY=n" >> .config #不独立编译V2Ray，用Xray替代
+        echo "CONFIG_FIRMWARE_INCLUDE_XRAY=y" >> .config #集成Xray内核，完美支持 Trojan 和 AnyTLS(Reality/VLESS/XTLS等)
+        echo "CONFIG_FIRMWARE_INCLUDE_TROJAN=n" >> .config #Xray内核已包含Trojan协议支持，无需独立编译以节省16M闪存空间
         echo "CONFIG_FIRMWARE_INCLUDE_SSOBFS=n" >> .config # simple-obfs混淆插件
         
         #########################################################################################
-        # 由于仓库删除了 shadowsocks 源码，这里从其他兼容仓库拉取 shadowsocks 文件夹
-        git clone --depth=1 https://github.com/chongshengB/rt-n56u.git /tmp/rt-n56u
-        cp -r /tmp/rt-n56u/trunk/user/shadowsocks /opt/rt-n56u/trunk/user/
-        rm -rf /tmp/rt-n56u
-        
-        # 修复1：确保 shadowsocks 被加入编译列表 (防止 Makefile 中遗漏导致根本没编译进固件)
-        sed -i 's/^#.*dir_$(CONFIG_FIRMWARE_INCLUDE_SHADOWSOCKS).*/dir_$(CONFIG_FIRMWARE_INCLUDE_SHADOWSOCKS) += shadowsocks/' /opt/rt-n56u/trunk/user/Makefile
-        if ! grep -q "CONFIG_FIRMWARE_INCLUDE_SHADOWSOCKS" /opt/rt-n56u/trunk/user/Makefile; then
-            sed -i '/dir_$(CONFIG_FIRMWARE_INCLUDE_CURL)/a\dir_$(CONFIG_FIRMWARE_INCLUDE_SHADOWSOCKS)      += shadowsocks' /opt/rt-n56u/trunk/user/Makefile
-        fi
-        
-        # 修复2：恢复可能被隐藏的科学上网 Web UI 菜单
-        sed -i 's|^//\(.*dict_arg_advance_shadowsocks.*\)|\1|g' /opt/rt-n56u/trunk/user/httpd/common.h || true
+        # 已经更换为 MeIsKuya/padavan 仓库，原生自带完整且可用的科学上网插件和 Web 界面，无需再到处缝合修补源码
         
         sudo ./clear_tree
         sudo ./build_firmware_modify $TNAME 0
