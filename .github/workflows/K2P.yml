@@ -39,11 +39,11 @@ jobs:
         sh dl_toolchain.sh
         mkdir -p /opt/images/
 
-        ##### 修改内存空间和 storage空间6m
-        sed -i 's/SIZ=0x80000/SIZ=0x500000/g' /opt/rt-n56u/trunk/configs/boards/K2P/kernel-3.4.x-5.0.config
+        ##### 修改内存空间和 storage空间 (注意：K2P仅16M闪存，切勿修改SIZ导致固件空间被压缩截断，这会导致各种玄学Bug比如无法获取IP)
+        # sed -i 's/SIZ=0x80000/SIZ=0x500000/g' /opt/rt-n56u/trunk/configs/boards/K2P/kernel-3.4.x-5.0.config
+        # sed -i 's/mtd_part_size=65536/mtd_part_size=5242880/g' /opt/rt-n56u/trunk/user/scripts/mtd_storage.sh
         sed -i 's/size_etc="6M"/size_etc="5M"/g' /opt/rt-n56u/trunk/user/scripts/dev_init.sh
         sed -i 's/size_tmp="24M"/size_tmp="30M"/g' /opt/rt-n56u/trunk/user/scripts/dev_init.sh
-        sed -i 's/mtd_part_size=65536/mtd_part_size=5242880/g' /opt/rt-n56u/trunk/user/scripts/mtd_storage.sh
     - name: Build Firmware
       env:
         TNAME: K2P
@@ -216,7 +216,7 @@ jobs:
         echo "CONFIG_FIRMWARE_INCLUDE_IFB=y" >> .config
 
         ##包含 IPSet 工具和内核模块。约 0.4MB
-        #echo "CONFIG_FIRMWARE_INCLUDE_IPSET=y" >> .config
+        echo "CONFIG_FIRMWARE_INCLUDE_IPSET=y" >> .config
 
         ##包含 NFSv3 服务器。约 0.6MB  已删除 /trunk/user/httpd/common.h
         echo "CONFIG_FIRMWARE_INCLUDE_NFSD=n" >> .config
@@ -233,8 +233,8 @@ jobs:
         ##包含 USB-over-Ethernet 打印机守护程序。约 0.05MB
         echo "CONFIG_FIRMWARE_INCLUDE_U2EC=n" >> .config
 
-        ##包含 "tcpdump" 工具。约 0.6MB
-        echo "CONFIG_FIRMWARE_INCLUDE_TCPDUMP=y" >> .config
+        ##包含 "tcpdump" 工具。约 0.6MB (不常用，改为n可省空间)
+        echo "CONFIG_FIRMWARE_INCLUDE_TCPDUMP=n" >> .config
 
         ## 包含 "hdparm" 工具（允许设置硬盘节能超时时间和 APM）。约 0.1MB
         echo "CONFIG_FIRMWARE_INCLUDE_HDPARM=n" >> .config
@@ -297,8 +297,8 @@ jobs:
         ##包含 Firefly iTunes 媒体服务器。约 1.0MB
         echo "CONFIG_FIRMWARE_INCLUDE_FIREFLY=n" >> .config
 
-        ##为 Minidlna 和 Firefly 包含 ffmpeg 0.11.x（替代 0.6.x）。约 0.1MB
-        echo "CONFIG_FIRMWARE_INCLUDE_FFMPEG_NEW=y" >> .config
+        ##为 Minidlna 和 Firefly 包含 ffmpeg 0.11.x（替代 0.6.x）。约 0.1MB (如果不用媒体服务器，设为n省空间)
+        echo "CONFIG_FIRMWARE_INCLUDE_FFMPEG_NEW=n" >> .config
 
 
 
@@ -436,6 +436,15 @@ jobs:
         git clone --depth=1 https://github.com/chongshengB/rt-n56u.git /tmp/rt-n56u
         cp -r /tmp/rt-n56u/trunk/user/shadowsocks /opt/rt-n56u/trunk/user/
         rm -rf /tmp/rt-n56u
+        
+        # 修复1：确保 shadowsocks 被加入编译列表 (防止 Makefile 中遗漏导致根本没编译进固件)
+        sed -i 's/^#.*dir_$(CONFIG_FIRMWARE_INCLUDE_SHADOWSOCKS).*/dir_$(CONFIG_FIRMWARE_INCLUDE_SHADOWSOCKS) += shadowsocks/' /opt/rt-n56u/trunk/user/Makefile
+        if ! grep -q "CONFIG_FIRMWARE_INCLUDE_SHADOWSOCKS" /opt/rt-n56u/trunk/user/Makefile; then
+            sed -i '/dir_$(CONFIG_FIRMWARE_INCLUDE_CURL)/a\dir_$(CONFIG_FIRMWARE_INCLUDE_SHADOWSOCKS)      += shadowsocks' /opt/rt-n56u/trunk/user/Makefile
+        fi
+        
+        # 修复2：恢复可能被隐藏的科学上网 Web UI 菜单
+        sed -i 's|^//\(.*dict_arg_advance_shadowsocks.*\)|\1|g' /opt/rt-n56u/trunk/user/httpd/common.h || true
         
         sudo ./clear_tree
         sudo ./build_firmware_modify $TNAME 0
