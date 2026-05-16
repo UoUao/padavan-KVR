@@ -267,7 +267,7 @@ jobs:
         echo "CONFIG_FIRMWARE_INCLUDE_HTTPS=y" >> .config
 
         ##包含 sftp 服务器。openssl 约 1.2MB，sftp-server 约 0.06MB
-        echo "CONFIG_FIRMWARE_INCLUDE_SFTP=n" >> .config
+        echo "CONFIG_FIRMWARE_INCLUDE_SFTP=y" >> .config
 
         ##包含 dropbear SSH。约 0.3MB
         echo "CONFIG_FIRMWARE_INCLUDE_DROPBEAR=y" >> .config
@@ -276,7 +276,7 @@ jobs:
         echo "CONFIG_FIRMWARE_INCLUDE_DROPBEAR_FAST_CODE=y" >> .config
 
         ##使用 OpenSSH 替代 dropbear。openssl 约 1.2MB，openssh 约 1.0MB
-        echo "CONFIG_FIRMWARE_INCLUDE_OPENSSH=n" >> .config
+        echo "CONFIG_FIRMWARE_INCLUDE_OPENSSH=y" >> .config
 
         ##包含 StrongSwan。XFRM 模块约 0.2MB，strongswan 约 0.7MB
         echo "CONFIG_FIRMWARE_INCLUDE_SSWAN=n" >> .config
@@ -288,7 +288,7 @@ jobs:
         echo "CONFIG_FIRMWARE_INCLUDE_OPENSSL_EXE=y" >> .config
 
         ##包含 xUPNPd IPTV 媒体服务器。约 0.3MB
-        echo "CONFIG_FIRMWARE_INCLUDE_XUPNPD=n" >> .config
+        echo "CONFIG_FIRMWARE_INCLUDE_XUPNPD=y" >> .config
 
         ##包含 Minidlna UPnP 媒体服务器。约 1.6MB
         echo "CONFIG_FIRMWARE_INCLUDE_MINIDLNA=n" >> .config
@@ -322,7 +322,7 @@ jobs:
         echo "CONFIG_FIRMWARE_INCLUDE_SCUTCLIENT=n" >> .config
         
         ## OpenVPN。需要 IPv6 支持。openssl 约 1.2MB，openvpn 约 0.4MB
-        echo "CONFIG_FIRMWARE_INCLUDE_OPENVPN=n" >> .config
+        echo "CONFIG_FIRMWARE_INCLUDE_OPENVPN=y" >> .config
 
         ## 广东工业校园认证
         echo "CONFIG_FIRMWARE_INCLUDE_GDUT_DRCOM=n" >> .config
@@ -358,34 +358,34 @@ jobs:
         echo "CONFIG_FIRMWARE_INCLUDE_VLMCSD=n" >> .config
 
          ## TTYD
-        echo "CONFIG_FIRMWARE_INCLUDE_TTYD=n" >> .config
+        echo "CONFIG_FIRMWARE_INCLUDE_TTYD=y" >> .config
 
          ## 文件传输工具
-        echo "CONFIG_FIRMWARE_INCLUDE_LRZSZ=n" >> .config
+        echo "CONFIG_FIRMWARE_INCLUDE_LRZSZ=y" >> .config
 
          ## 系统状态监控工具
-        echo "CONFIG_FIRMWARE_INCLUDE_HTOP=n" >> .config
+        echo "CONFIG_FIRMWARE_INCLUDE_HTOP=y" >> .config
 
          ## 文本编辑器
-        echo "CONFIG_FIRMWARE_INCLUDE_NANO=n" >> .config
+        echo "CONFIG_FIRMWARE_INCLUDE_NANO=y" >> .config
 
          ## iperf3测速软件
-        echo "CONFIG_FIRMWARE_INCLUDE_IPERF3=n" >> .config
+        echo "CONFIG_FIRMWARE_INCLUDE_IPERF3=y" >> .config
 
         ## DUMP1090
-        echo "CONFIG_FIRMWARE_INCLUDE_DUMP1090=n" >> .config
+        echo "CONFIG_FIRMWARE_INCLUDE_DUMP1090=y" >> .config
 
         ## RTL_SDR
-        echo "CONFIG_FIRMWARE_INCLUDE_RTL_SDR=n" >> .config
+        echo "CONFIG_FIRMWARE_INCLUDE_RTL_SDR=y" >> .config
 
         ## MTR
-        echo "CONFIG_FIRMWARE_INCLUDE_MTR=n" >> .config
+        echo "CONFIG_FIRMWARE_INCLUDE_MTR=y" >> .config
 
         ## ipv6端口转发工具
-        echo "CONFIG_FIRMWARE_INCLUDE_SOCAT=n" >> .config
+        echo "CONFIG_FIRMWARE_INCLUDE_SOCAT=y" >> .config
 
         ## SRELAY代理
-        echo "CONFIG_FIRMWARE_INCLUDE_SRELAY=n" >> .config
+        echo "CONFIG_FIRMWARE_INCLUDE_SRELAY=y" >> .config
 
         ## MENTOHUST校园认证 已删除 请查看/trunk/user/httpd/common.h
         echo "CONFIG_FIRMWARE_INCLUDE_MENTOHUST=n" >> .config
@@ -397,7 +397,7 @@ jobs:
         echo "CONFIG_FIRMWARE_INCLUDE_WIREGUARD=n" >> .config  ## wireguard 约1M
         echo "CONFIG_FIRMWARE_INCLUDE_TUNSAFE=n" >> .config ## tunsafe（wireguard的TCP方式）
         echo "CONFIG_FIRMWARE_INCLUDE_ZEROTIER=n" >> .config ## zerotier 约 20k
-        echo "CONFIG_FIRMWARE_INCLUDE_ALIDDNS=n" >> .config #阿里DDNS ~20k
+        echo "CONFIG_FIRMWARE_INCLUDE_ALIDDNS=y" >> .config #阿里DDNS ~20k
         echo "CONFIG_FIRMWARE_INCLUDE_DDNSTO=n" >> .config #ddnsto 约800k  已删除 /trunk/user/httpd/common.h
         echo "CONFIG_FIRMWARE_INCLUDE_TAILSCALE=n" >> .config #tailscale 约20k
         echo "CONFIG_FIRMWARE_INCLUDE_NATPIERCE=n" >> .config #皎月连 约20k
@@ -421,17 +421,17 @@ jobs:
         echo "CONFIG_FIRMWARE_INCLUDE_MSD_LITE=n" >> .config #MSD_LITE工具
         
         
-        #echo "CONFIG_FIRMWARE_INCLUDE_V2RAYA=n" >> .config #v2raya 已删除 /trunk/user/httpd/common.h
+        echo "CONFIG_FIRMWARE_INCLUDE_V2RAYA=y" >> .config #v2raya 已删除 /trunk/user/httpd/common.h
         #echo "CONFIG_FIRMWARE_INCLUDE_NVPPROXY=n" >> .config #NVPPROXY 已删除 请查看/trunk/user/httpd/common.h
         ##科学上网## 已删除 请查看/trunk/user/httpd/common.h
         echo "CONFIG_FIRMWARE_INCLUDE_SHADOWSOCKS=y" >> .config #SS plus+ 科学上网插件
-        echo "CONFIG_FIRMWARE_INCLUDE_V2RAY=n" >> .config #无需集成会在线下载
-        echo "CONFIG_FIRMWARE_INCLUDE_XRAY=n" >> .config #无需集成会在线下载
-        echo "CONFIG_FIRMWARE_INCLUDE_TROJAN=n" >> .config #无需集成会在线下载
-        echo "CONFIG_FIRMWARE_INCLUDE_SSOBFS=n" >> .config # simple-obfs混淆插件
+        echo "CONFIG_FIRMWARE_INCLUDE_V2RAY=y" >> .config #无需集成会在线下载
+        echo "CONFIG_FIRMWARE_INCLUDE_XRAY=y" >> .config #无需集成会在线下载
+        echo "CONFIG_FIRMWARE_INCLUDE_TROJAN=y" >> .config #无需集成会在线下载
+        echo "CONFIG_FIRMWARE_INCLUDE_SSOBFS=y" >> .config # simple-obfs混淆插件
         
         #########################################################################################
-        # 由于仓库删除了 shadowsocks 源码，这里从其他兼容仓库拉取 shadowsocks 文件夹
+       # 由于仓库删除了 shadowsocks 源码，这里从其他兼容仓库拉取 shadowsocks 文件夹
         git clone --depth=1 https://github.com/chongshengB/rt-n56u.git /tmp/rt-n56u
         cp -r /tmp/rt-n56u/trunk/user/shadowsocks /opt/rt-n56u/trunk/user/
         rm -rf /tmp/rt-n56u
