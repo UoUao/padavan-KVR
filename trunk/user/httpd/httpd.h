@@ -1,225 +1,222 @@
-/* ... 前面的 include 和 定义保持不变 ... */
+/*
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+ * MA 02111-1307 USA
+ */
 
-// [此处代码建议全量替换你的 handle_request 函数及其上方新增的辅助函数]
+#ifndef _httpd_h_
+#define _httpd_h_
 
-void send_file_response(int status, const char *content_type, const char *file, FILE *conn_fp) {
-    FILE *fp = fopen(file, "r");
-    if (!fp) {
-        send_error(404, "Not Found", NULL, "File not found.", conn_fp);
-        return;
-    }
-    fprintf(conn_fp, "HTTP/1.1 %d OK\r\n", status);
-    fprintf(conn_fp, "Content-Type: %s\r\n", content_type);
-    fprintf(conn_fp, "Connection: close\r\n\r\n");
-    char buffer[4096];
-    size_t n;
-    while ((n = fread(buffer, 1, sizeof(buffer), fp)) > 0) {
-        fwrite(buffer, 1, n, conn_fp);
-    }
-    fclose(fp);
+#include <ralink_boards.h>
+#include <ralink_priv.h>
+#include <netutils.h>
+#include <rtutils.h>
+#include <shutils.h>
+#include <nvram_linux.h>
+
+#define SYSLOG_ID_HTTPD		"httpd"
+
+#define STORAGE_HTTPSSL_DIR	"/etc/storage/https"
+#define STORAGE_OVPNSVR_DIR	"/etc/storage/openvpn/server"
+#define STORAGE_OVPNCLI_DIR	"/etc/storage/openvpn/client"
+#define STORAGE_DNSMASQ_DIR	"/etc/storage/dnsmasq"
+#define STORAGE_SCRIPTS_DIR	"/etc/storage"
+#define STORAGE_CRONTAB_DIR	"/etc/storage/cron/crontabs"
+#define STORAGE_KOOLPROXYT_DIR	"/etc/storage/koolproxy"
+#define PROFILE_FIFO_UPLOAD	"/tmp/settings_u.prf"
+#define PROFILE_FIFO_DOWNLOAD	"/tmp/settings_d.prf"
+#define STORAGE_FIFO_FILENAME	"/tmp/storage.tar.bz2"
+
+/* Generic MIME type handler */
+struct mime_handler {
+	char *pattern;
+	char *mime_type;
+	char *extra_header;
+	void (*input)(const char *url, FILE *stream, int clen, char *boundary);
+	void (*output)(const char *url, FILE *stream);
+	int need_auth;
+};
+
+extern struct mime_handler mime_handlers[];
+
+/* CGI helper functions */
+extern void init_cgi(char *query);
+extern char *get_cgi(char *name);
+
+struct language_table{
+	char *Lang;
+	char *Target_Lang;
+};
+
+extern const struct language_table language_tables[];
+
+typedef struct kw_s     {
+	int len, tlen;                                          // actually / total
+	char dict[4];
+	unsigned char **idx;
+	unsigned char *buf;
+} kw_t, *pkw_t;
+
+extern kw_t kw_EN;
+extern kw_t kw_XX;
+
+#define INC_ITEM	256
+#define REALLOC_VECTOR(p, len, size, item_size) {		\
+	assert ((len) >= 0 && (len) <= (size));			\
+	if (len == size) {					\
+		int new_size = size + INC_ITEM;			\
+		void *np = malloc(new_size * (item_size));	\
+		assert(np != NULL);				\
+		bzero(np, new_size * (item_size));		\
+		if (p) {					\
+			memcpy(np, p, len * (item_size));	\
+			free(p);				\
+		}						\
+		p = np;						\
+		size = new_size;				\
+	}							\
 }
 
-void send_file_download(const char *file, FILE *conn_fp) {
-    FILE *fp = fopen(file, "rb");
-    if (!fp) {
-        send_error(404, "Not Found", NULL, "File not found.", conn_fp);
-        return;
-    }
-    fseek(fp, 0, SEEK_END);
-    long file_size = ftell(fp);
-    fseek(fp, 0, SEEK_SET);
-    fprintf(conn_fp, "HTTP/1.1 200 OK\r\n");
-    fprintf(conn_fp, "Content-Type: application/octet-stream\r\n");
-    fprintf(conn_fp, "Content-Disposition: attachment; filename=\"%s\"\r\n", file);
-    fprintf(conn_fp, "Content-Length: %ld\r\n", file_size);
-    fprintf(conn_fp, "Connection: close\r\n\r\n");
-    char buffer[4096];
-    size_t n;
-    while ((n = fread(buffer, 1, sizeof(buffer), fp)) > 0) {
-        fwrite(buffer, 1, n, conn_fp);
-    }
-    fclose(fp);
-}
+typedef FILE * webs_t;
+#define T(s) (s)
+#define __TMPVAR(x) tmpvar ## x
+#define _TMPVAR(x) __TMPVAR(x)
+#define TMPVAR _TMPVAR(__LINE__)
+#define websWrite(wp, fmt, args...) ({ int TMPVAR = fprintf(wp, fmt, ## args); fflush(wp); TMPVAR; })
+#define websError(wp, code, msg, args...) fprintf(wp, msg, ## args)
+#define websDone(wp, code) fflush(wp)
+#define websGetVar(wp, var, default) (get_cgi(var) ? : default)
 
-static void
-handle_request(FILE *conn_fp, const conn_item_t *item)
-{
-	char line[4096];
-	char *method, *path, *protocol, *authorization, *boundary;
-	char *cur, *end, *cp, *file, *query;
-	int len, login_state, method_id, do_logout, do_wxsend, clen = 0;
-	struct mime_handler *handler;
-	struct stat st, *p_st = NULL;
-	uaddr conn_ip;
-	time_t if_modified_since = (time_t)-1;
+/* Regular file handler */
+extern void do_file(const char *url, FILE *stream);
+extern void do_ej(const char *url, FILE *stream);
 
-	authorization = boundary = NULL;
+extern int ejArgs(int argc, char **argv, char *fmt, ...);
 
-	if (!fgets(line, sizeof(line), conn_fp)) {
-		send_error( 400, "Bad Request", NULL, "No request found.", conn_fp);
-		return;
-	}
+struct ej_handler {
+	char *pattern;
+	int (*output)(int eid, webs_t wp, int argc, char **argv);
+};
 
-	method = path = line;
-	strsep(&path, " ");
-	while (path && *path == ' ') path++;
-	protocol = path;
-	strsep(&protocol, " ");
-	while (protocol && *protocol == ' ') protocol++;
-	cp = protocol;
-	strsep(&cp, " ");
+extern struct ej_handler ej_handlers[];
 
-	if ( !method || !path || !protocol ) {
-		send_error( 400, "Bad Request", NULL, "Can't parse request.", conn_fp );
-		return;
-	}
-
-	cur = protocol + strlen(protocol) + 1;
-	end = line + sizeof(line) - 1;
-
-	while ( (cur < end) && (fgets(cur, line + sizeof(line) - cur, conn_fp)) ) {
-		if ( strcmp( cur, "\n" ) == 0 || strcmp( cur, "\r\n" ) == 0 ) break;
-		if (strncasecmp(cur, "Accept-Language:", 16) == 0) {
-			if (!http_has_lang) http_has_lang = set_preferred_lang(cur + 16);
-		}
-		else if (strncasecmp( cur, "Authorization:", 14) == 0) {
-			cp = cur + 14; cp += strspn( cp, " \t" );
-			authorization = cp; cur = cp + strlen(cp) + 1;
-		}
-		else if (strncasecmp( cur, "Content-Length:", 15) == 0) {
-			cp = cur + 15; cp += strspn( cp, " \t" );
-			clen = strtoul( cp, NULL, 0 );
-		}
-		else if (strncasecmp( cur, "If-Modified-Since:", 18) == 0) {
-			cp = cur + 18; cp += strspn( cp, " \t" );
-			if_modified_since = tdate_parse(cp);
-		}
-		else if ((cp = strstr( cur, "boundary=" ))) {
-			boundary = cp + 9;
-			for ( cp = cp + 9; *cp && *cp != '\r' && *cp != '\n'; cp++ );
-			*cp = '\0'; cur = ++cp;
-		}
-	}
-
-	if (strcasecmp(method, "get") == 0) method_id = HTTP_METHOD_GET;
-	else if (strcasecmp(method, "head") == 0) method_id = HTTP_METHOD_HEAD;
-	else if (strcasecmp(method, "post") == 0) method_id = HTTP_METHOD_POST;
-	else {
-		send_error( 501, "Not Implemented", NULL, "Unsupported method.", conn_fp );
-		return;
-	}
-
-	if ( path[0] != '/' ) {
-		send_error( 400, "Bad Request", NULL, "Bad URL.", conn_fp );
-		return;
-	}
-
-	file = path + 1;
-	len = strlen(file);
-	if (len < 1) file = "index.asp";
-
-	query = file;
-	strsep(&query, "?");
-
-	usockaddr_to_uaddr(&item->usa, &conn_ip);
-	char ip_str[INET6_ADDRSTRLEN];
-	convert_ip_to_string(&conn_ip, ip_str, sizeof(ip_str));
-
-	login_state = http_login_check(&conn_ip);
-	
-	// 修正：如果没登录且访问敏感页面，跳转到登录页
-	if (login_state == 0) {
-		if (strstr(file, ".htm") != NULL || strstr(file, ".asp") != NULL) {
-			file = "Nologin.asp";
-			query = NULL;
-		}
-	}
-
-	if (strcmp(file, "logout") == 0) {
-		send_headers( 401, "Unauthorized", NULL, NULL, NULL, conn_fp );
-		return;
-	}
-
-	for (handler = mime_handlers; handler->pattern; handler++) {
-		if (match(handler->pattern, file)) break;
-	}
-
-	if (!handler->pattern) {
-		send_error( 404, "Not Found", NULL, "URL was not found.", conn_fp );
-		return;
-	}
-
-#if defined (SUPPORT_HTTPS)
-	http_is_ssl = item->ssl;
+// aidisk.c
+#if defined (USE_USB_SUPPORT)
+extern int ej_get_usb_ports_info(int eid, webs_t wp, int argc, char **argv);
+#endif
+#if defined (USE_STORAGE)
+extern int ej_disk_pool_mapping_info(int eid, webs_t wp, int argc, char **argv);
+extern int ej_available_disk_names_and_sizes(int eid, webs_t wp, int argc, char **argv);
+extern int ej_get_storage_share_list(int eid, webs_t wp, int argc, char **argv);
+extern int ej_get_AiDisk_status(int eid, webs_t wp, int argc, char **argv);
+extern int ej_set_AiDisk_status(int eid, webs_t wp, int argc, char **argv);
+extern int ej_get_all_accounts(int eid, webs_t wp, int argc, char **argv);
+extern int ej_safely_remove_disk(int eid, webs_t wp, int argc, char **argv);
+extern int ej_get_permissions_of_account(int eid, webs_t wp, int argc, char **argv);
+extern int ej_set_account_permission(int eid, webs_t wp, int argc, char **argv);
+extern int ej_get_folder_tree(int eid, webs_t wp, int argc, char **argv);
+extern int ej_get_share_tree(int eid, webs_t wp, int argc, char **argv);
+extern int ej_initial_account(int eid, webs_t wp, int argc, char **argv);
+extern int ej_create_account(int eid, webs_t wp, int argc, char **argv);
+extern int ej_delete_account(int eid, webs_t wp, int argc, char **argv);
+extern int ej_modify_account(int eid, webs_t wp, int argc, char **argv);
+extern int ej_create_sharedfolder(int eid, webs_t wp, int argc, char **argv);
+extern int ej_delete_sharedfolder(int eid, webs_t wp, int argc, char **argv);
+extern int ej_modify_sharedfolder(int eid, webs_t wp, int argc, char **argv);
+extern int ej_set_share_mode(int eid, webs_t wp, int argc, char **argv);
 #endif
 
-	do_logout = (strcmp(file, "Logout.asp") == 0) ? 1 : 0;
-    // 识别后台自动刷新页面，不触发推送
-	do_wxsend = ((strcmp(file, "log_content.asp") == 0) || (strcmp(file, "system_status_data.asp") == 0) || (strcmp(file, "status_internet.asp") == 0)) ? 1 : 0;
+// aspbw.c
+extern int f_exists(const char *path);
+extern int f_wait_exists(const char *name, int max);
+extern int do_f(const char *path, webs_t wp);
+extern void char_to_ascii(char *output, uint8_t *input);
 
-    // --- 权限检查逻辑 ---
-	if (handler->need_auth && login_state > 1 && !do_logout) {
-		if (!auth_check(authorization, ip_str, do_wxsend)) {
-			http_logout(&conn_ip);
-			if (method_id == HTTP_METHOD_POST) eat_post_data(conn_fp, clen);
-			send_authenticate(conn_fp);
-			return;
-		}
-		
-		if (login_state == 2) {
-			http_login(&conn_ip);
-			if (!do_wxsend) {
-                // 成功登录推送
-                logmessage("httpd", "用户IP:【%s】 成功登录管理界面！", ip_str);
-                if (nvram_get_int("wxsend_enable") && (nvram_get_int("wxsend_login") == 1 || nvram_get_int("wxsend_login") == 3)) {
-                    char wx_command[1024];
-                    const char *wx_title = nvram_get("wxsend_title") ? : "WEB登录";
-                    snprintf(wx_command, sizeof(wx_command), "/usr/bin/wxsend.sh send_message \"【%s】\" \"用户IP：\" \"%s\" \"成功登录管理界面！\"", wx_title, ip_str);
-                    system(wx_command);
-                }
-            }
-		}
-	}
+// cgi.c
+extern void set_cgi(char *name, char *value);
 
-    /* 安全修正：etc/ 或 tmp/ 路径访问必须放在登录校验之后！ */
-	if (strncmp(file, "etc/", 4) == 0 || strncmp(file, "tmp/", 4) == 0) {
-    		char *ext = strrchr(file, '.');
-    		if (ext) {
-        		if (strcasecmp(ext, ".html") == 0 || strcasecmp(ext, ".asp") == 0) {
-            			send_file_response(200, "text/html", file, conn_fp);
-            			return;
-        		} else if (strcasecmp(ext, ".txt") == 0) {
-            			send_file_response(200, "text/plain; charset=utf-8", file, conn_fp);
-            			return;
-        		}
-    		}
-    		send_file_download(file, conn_fp);
-    		return;
-	}
+// crc32.c
+extern unsigned long crc32_sp (unsigned long, const unsigned char *, unsigned int);
 
-	if (method_id == HTTP_METHOD_POST) {
-		if (handler->input) handler->input(file, conn_fp, clen, boundary);
-		else eat_post_data(conn_fp, clen);
-		try_pull_data(conn_fp, item->fd);
-	} else {
-		if (query) do_uncgi_query(query);
-		else if (handler->output == do_ej) do_cgi_clear();
-	}
+// base64.c
+extern int b64_decode( const char* str, unsigned char* space, int size );
 
-	if (handler->output == do_file) {
-		if (stat(file, &st) == 0 && !S_ISDIR(st.st_mode)) {
-			p_st = &st;
-			if (!handler->extra_header && if_modified_since != (time_t)-1 && if_modified_since == st.st_mtime) {
-				st.st_size = 0;
-				send_headers( 304, "Not Modified", NULL, handler->mime_type, p_st, conn_fp );
-				return;
-			}
-		}
-	}
+// ej.c
+extern int load_dictionary (char *lang, pkw_t pkw);
+extern void release_dictionary (pkw_t pkw);
+extern char *get_alert_msg_from_dict(const char *msg_id);
 
-	send_headers( 200, "OK", handler->extra_header, handler->mime_type, p_st, conn_fp );
-	if (method_id != HTTP_METHOD_HEAD && handler->output) {
-		handler->output(file, conn_fp);
-	}
-	if (do_logout) http_logout(&conn_ip);
-}
+// tdate_parse.c
+extern time_t tdate_parse(char *str);
+
+// httpd.c
+extern long uptime(void);
+extern void fill_login_ip(char *p_out_ip, size_t out_ip_len);
+extern const char *get_login_mac(void);
+extern int get_login_safe(void);
+
+// initial_web_hook.c
+extern char *initial_disk_pool_mapping_info(void);
+extern char *initial_blank_disk_names_and_sizes(void);
+extern char *initial_available_disk_names_and_sizes(void);
+
+// ralink.c
+struct ifreq;
+struct iwreq;
+extern int get_apcli_peer_connected(const char *ifname, struct iwreq *p_wrq);
+extern int get_apcli_wds_entry(const char *ifname, RT_802_11_MAC_ENTRY *pme);
+extern int is_mac_in_sta_list(const unsigned char* p_mac);
+extern int ej_lan_leases(int eid, webs_t wp, int argc, char **argv);
+extern int ej_vpns_leases(int eid, webs_t wp, int argc, char **argv);
+extern int ej_nat_table(int eid, webs_t wp, int argc, char **argv);
+extern int ej_route_table(int eid, webs_t wp, int argc, char **argv);
+extern int ej_conntrack_table(int eid, webs_t wp, int argc, char **argv);
+extern int wl_ioctl(const char *ifname, int cmd, struct iwreq *pwrq);
+extern int ej_wl_auth_list(int eid, webs_t wp, int argc, char **argv);
+#if BOARD_HAS_5G_RADIO
+extern int ej_wl_status_5g(int eid, webs_t wp, int argc, char **argv);
+extern int ej_wl_scan_5g(int eid, webs_t wp, int argc, char **argv);
+extern int ej_wl_bssid_5g(int eid, webs_t wp, int argc, char **argv);
+#endif
+extern int ej_wl_status_2g(int eid, webs_t wp, int argc, char **argv);
+extern int ej_wl_scan_2g(int eid, webs_t wp, int argc, char **argv);
+extern int ej_wl_bssid_2g(int eid, webs_t wp, int argc, char **argv);
+
+// rtl8367.c or mtk_esw.c
+extern int get_eth_port_bytes(int port_id_uapi, uint64_t *rx, uint64_t *tx);
+extern int fill_eth_port_status(int port_id_uapi, char linkstate[40]);
+extern int fill_eth_status(int port_id_uapi, webs_t wp);
+
+// upload.c
+extern void do_upgrade_fw_post(const char *url, FILE *stream, int clen, char *boundary);
+extern void do_restore_nv_post(const char *url, FILE *stream, int clen, char *boundary);
+extern void do_restore_st_post(const char *url, FILE *stream, int clen, char *boundary);
+
+// web_ex.c
+extern void nvram_commit_safe(void);
+extern void do_uncgi_query(const char *query);
+extern void do_cgi_clear(void);
+
+#if defined (SUPPORT_HTTPS)
+extern int ssl_server_init(char* ca_file, char *crt_file, char *key_file, char *dhp_file, char *ssl_cipher_list);
+extern void ssl_server_uninit(void);
+extern FILE *ssl_server_fopen(int sd);
+extern const char* ssl_server_get_ssl_ver(void);
+#endif
+
+extern char log_header[];
+#define httpd_log(fmt, args...) logmessage(log_header, fmt, ## args);
+
+
+#endif /* _httpd_h_ */
