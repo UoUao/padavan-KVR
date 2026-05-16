@@ -38,7 +38,7 @@
 
 #include "httpd.h"
 
-#define SYSLOG_ID_SSL	"SSL/TLS"		
+#define SYSLOG_ID_SSL	"SSL/TLS"
 
 typedef struct {
 	SSL* ssl;
